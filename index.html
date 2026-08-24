@@ -2,15 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pet Earnings Calculator</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐾</text></svg>">
-<meta name="theme-color" content="#0B0E1C">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Pet Calc">
-<link rel="manifest" id="manifestLink">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
@@ -54,11 +48,7 @@ body{
 .bg-glow::after{background:radial-gradient(circle,#1FBFA8,transparent 60%);bottom:-28vmax;right:-18vmax;animation:drift 40s ease-in-out infinite alternate-reverse}
 @keyframes drift{from{transform:translate(0,0)}to{transform:translate(6vmax,4vmax)}}
 
-.app{
-  max-width:640px;margin:0 auto;
-  padding:40px 18px 56px;
-  padding:calc(40px + env(safe-area-inset-top,0px)) 18px calc(56px + env(safe-area-inset-bottom,0px));
-}
+.app{max-width:640px;margin:0 auto;padding:40px 18px 56px}
 
 /* ---------- Header ---------- */
 header{text-align:center;margin-bottom:30px}
@@ -148,11 +138,8 @@ select{
   text-overflow:ellipsis;white-space:nowrap;overflow:hidden;
 }
 select:focus-visible{border-color:rgba(143,160,255,.6);box-shadow:0 0 0 3px rgba(143,160,255,.15)}
+select:disabled{cursor:not-allowed;opacity:.75}
 select option{background:#141A33;color:#EEF1FF;font-weight:700}
-/* Touch screens: 16px stops iOS Safari from zooming in when a dropdown is tapped */
-@media (pointer:coarse){
-  select{font-size:16px}
-}
 
 /* ---------- Buff chips ---------- */
 .chips{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:14px}
@@ -302,7 +289,7 @@ select option{background:#141A33;color:#EEF1FF;font-weight:700}
       </svg>
       Pet Earnings Calculator
     </h1>
-    <p class="tagline">Strip your pet's buffs to find its true base earning — then test any mutation&nbsp;+&nbsp;weather combo.</p>
+    <p class="tagline">Strip your pet's buffs to find its true base earning — then test any weather with your pet's current mutation.</p>
   </header>
 
   <div class="pipeline">
@@ -381,10 +368,10 @@ select option{background:#141A33;color:#EEF1FF;font-weight:700}
 
       <div class="fields" style="margin-top:0">
         <div>
-          <label class="lbl" for="mutTar">Target mutation</label>
+          <label class="lbl" for="mutTar">Mutation · locked to current 🔒</label>
           <div class="select-wrap">
             <span class="swatch" id="swMutTar"></span>
-            <select id="mutTar"></select>
+            <select id="mutTar" disabled aria-label="Mutation, locked to match current pet"></select>
             <svg class="chev" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4.5 6 8.5 10 4.5" fill="none" stroke="#EEF1FF" stroke-width="1.8" stroke-linecap="round"/></svg>
           </div>
         </div>
@@ -447,6 +434,7 @@ const MUTATIONS = [
   {name:'Cream',         mult:17,   color:'#FFE3B3'},
   {name:'Slime',         mult:18,   color:'#A8F04D'},
   {name:'Sunblossom',    mult:19,   color:'#FFB562', special:true},
+  {name:'Stellar',       mult:20,   color:'#7FB4FF', special:true},
 ];
 const WEATHERS = [
   {name:'None',        mult:0, color:'#8A93B5'},
@@ -551,6 +539,9 @@ fillSelect($('weaTar'), WEATHERS);
 
 /* ---------- Main calc ---------- */
 function recalc(){
+  /* Simulation mutation is locked to the current pet's mutation */
+  $('mutTar').value = $('mutCur').value;
+
   const mC = MUTATIONS[$('mutCur').value];
   const wC = WEATHERS[$('weaCur').value];
   const mT = MUTATIONS[$('mutTar').value];
@@ -636,53 +627,6 @@ $('eliteToggle').addEventListener('click', () => {
 $('earnings').addEventListener('input', recalc);
 ['mutCur','weaCur','mutTar','weaTar'].forEach(id => $(id).addEventListener('change', recalc));
 recalc();
-
-/* ---------- Installable app (PWA) — manifest + icon generated at runtime to stay single-file ---------- */
-(function setupPWA(){
-  if(location.protocol === 'file:') return; /* installing requires the page to be hosted over https */
-  try{
-    function makeIcon(size){
-      const c = document.createElement('canvas');
-      c.width = c.height = size;
-      const g = c.getContext('2d');
-      const bg = g.createLinearGradient(0,0,0,size);
-      bg.addColorStop(0,'#1C2244'); bg.addColorStop(1,'#0B0E1C');
-      g.fillStyle = bg; g.fillRect(0,0,size,size);
-      const glow = g.createRadialGradient(size/2,size/2,0,size/2,size/2,size*.5);
-      glow.addColorStop(0,'rgba(255,197,61,.32)'); glow.addColorStop(1,'rgba(255,197,61,0)');
-      g.fillStyle = glow; g.fillRect(0,0,size,size);
-      g.fillStyle = '#FFC53D';
-      g.translate(size/2,size/2);
-      const s = (size/24)*.6;
-      g.scale(s,s); g.translate(-12,-12);
-      const ell = (x,y,rx,ry)=>{ g.beginPath(); g.ellipse(x,y,rx,ry,0,0,Math.PI*2); g.fill(); };
-      ell(7,6.6,2.1,2.7); ell(17,6.6,2.1,2.7); ell(3.4,11.4,1.9,2.4); ell(20.6,11.4,1.9,2.4);
-      g.fill(new Path2D('M12 10.2c3.2 0 6.2 2.6 6.2 5.6 0 2.1-1.6 3.4-3.4 3.4-1.1 0-1.9-.5-2.8-.5s-1.7.5-2.8.5c-1.8 0-3.4-1.3-3.4-3.4 0-3 3-5.6 6.2-5.6z'));
-      return c.toDataURL('image/png');
-    }
-    const manifest = {
-      name:'Pet Earnings Calculator',
-      short_name:'Pet Calc',
-      description:'Strip pet buffs to find base earnings, then simulate mutation + weather combos.',
-      start_url: location.href,
-      scope: new URL('./', location.href).href,
-      display:'standalone',
-      background_color:'#0B0E1C',
-      theme_color:'#0B0E1C',
-      icons:[
-        {src:makeIcon(192), sizes:'192x192', type:'image/png', purpose:'any'},
-        {src:makeIcon(512), sizes:'512x512', type:'image/png', purpose:'any'},
-        {src:makeIcon(512), sizes:'512x512', type:'image/png', purpose:'maskable'}
-      ]
-    };
-    document.getElementById('manifestLink').href =
-      URL.createObjectURL(new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'}));
-    const touch = document.createElement('link');
-    touch.rel = 'apple-touch-icon';
-    touch.href = makeIcon(180);
-    document.head.appendChild(touch);
-  }catch(e){ /* app-install extras are optional — never break the calculator */ }
-})();
 </script>
 </body>
 </html>
